@@ -1,0 +1,7 @@
+* @chipid/core
+/apps/api/                @chipid/backend
+/packages/sdk-node/       @chipid/sdk
+/packages/nfc-parser/     @chipid/crypto
+/docs/                    @chipid/docs
+/.github/                 @chipid/platform
+/infra/                   @chipid/platform

@@ -1,0 +1,213 @@
+// ChipID core data model.
+//
+// Multi-tenant by `accountId` on every table. Hot rows (verifications,
+// events, webhook_deliveries) are partitioned by month in production via a
+// post-migrate script — kept off the model so Prisma doesn't fight us.
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["metrics", "tracing"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Environment {
+  test
+  live
+}
+
+enum VerificationType {
+  chip_nfc
+  document_ocr
+}
+
+enum VerificationStatus {
+  requires_input
+  processing
+  verified
+  failed
+  canceled
+  expired
+}
+
+enum FailureCode {
+  passive_auth_failed         // SOD signature did not verify
+  csca_chain_failed           // DSC not signed by trusted CSCA
+  data_group_hash_mismatch    // DG hash did not match SOD
+  chip_clone_suspected        // active auth failed
+  document_expired
+  face_mismatch
+  liveness_failed
+  user_canceled
+  client_secret_expired
+  internal_error
+}
+
+model Account {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stripeCustomerId       String?
+  stripeSubscriptionId   String?
+
+  apiKeys             ApiKey[]
+  verifications       Verification[]
+  webhookEndpoints    WebhookEndpoint[]
+  events              Event[]
+  usageRecords        UsageRecord[]
+
+  @@map("accounts")
+}
+
+model ApiKey {
+  id              String      @id @default(cuid())
+  accountId       String
+  account         Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  environment     Environment
+  // We store an Argon2id hash of the secret half plus an HMAC lookup hash so
+  // we can find the row by prefix-hash without scanning every key.
+  lookupHash      String      @unique
+  secretHash      String
+  prefix          String      // shown in UI, e.g. "sk_live_a1b2c3"
+  name            String
+  lastUsedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime    @default(now())
+
+  @@index([accountId])
+  @@map("api_keys")
+}
+
+model Verification {
+  id              String              @id @default(cuid())
+  accountId       String
+  account         Account             @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  environment     Environment
+  type            VerificationType
+  status          VerificationStatus  @default(requires_input)
+  failureCode     FailureCode?
+  failureMessage  String?
+
+  // Short-lived secret the mobile client uses, scoped to this verification.
+  clientSecretHash String  @unique
+  clientSecretExpiresAt DateTime
+
+  returnUrl       String?
+  metadata        Json    @default("{}")
+
+  // Resolved fields after a successful chip read. Null until status=verified.
+  // PII — encrypted at rest via column-level KMS envelope in production.
+  fullName        String?
+  dateOfBirth     DateTime?
+  sex             String?
+  nationality     String?
+  idNumber        String?
+  idExpiresAt     DateTime?
+  portraitS3Key   String?
+  rawDumpS3Key    String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  verifiedAt      DateTime?
+
+  events          Event[]
+  usageRecord     UsageRecord?
+
+  @@index([accountId, createdAt(sort: Desc)])
+  @@index([accountId, status])
+  @@map("verifications")
+}
+
+model Event {
+  id              String   @id @default(cuid())
+  accountId       String
+  account         Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  verificationId  String?
+  verification    Verification? @relation(fields: [verificationId], references: [id], onDelete: SetNull)
+  type            String   // e.g. "verification.verified"
+  data            Json
+  createdAt       DateTime @default(now())
+
+  deliveries      WebhookDelivery[]
+
+  @@index([accountId, createdAt(sort: Desc)])
+  @@index([verificationId])
+  @@map("events")
+}
+
+model WebhookEndpoint {
+  id              String   @id @default(cuid())
+  accountId       String
+  account         Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  url             String
+  // HMAC secret bound to this endpoint. Disclosed once at creation; we store
+  // the Argon2id hash plus a lookup HMAC for signature verification.
+  secretHash      String
+  enabledEvents   String[] // ["*"] or ["verification.verified", ...]
+  disabledAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  deliveries      WebhookDelivery[]
+
+  @@index([accountId])
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id              String   @id @default(cuid())
+  endpointId      String
+  endpoint        WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  eventId         String
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  attempt         Int      @default(0)
+  responseStatus  Int?
+  responseBody    String?
+  error           String?
+  nextAttemptAt   DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([endpointId, createdAt(sort: Desc)])
+  @@index([nextAttemptAt])
+  @@map("webhook_deliveries")
+}
+
+model IdempotencyKey {
+  // (accountId, key) is the unique identity. We store the response body
+  // verbatim so a replay returns byte-identical bytes.
+  accountId       String
+  key             String
+  requestHash     String   // refuse replays where the body changed
+  responseStatus  Int
+  responseBody    Bytes
+  responseHeaders Json
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime
+
+  @@id([accountId, key])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+model UsageRecord {
+  id              String   @id @default(cuid())
+  accountId       String
+  account         Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  verificationId  String   @unique
+  verification    Verification @relation(fields: [verificationId], references: [id], onDelete: Restrict)
+  // We report metered usage to Stripe after the verification settles
+  // (status=verified). reportedAt is null until then.
+  reportedAt      DateTime?
+  stripeUsageRecordId String?
+  createdAt       DateTime @default(now())
+
+  @@index([accountId, createdAt(sort: Desc)])
+  @@index([reportedAt])
+  @@map("usage_records")
+}

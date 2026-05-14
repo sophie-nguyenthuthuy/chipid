@@ -1,0 +1,30 @@
+name: Bug report
+description: Something is broken or behaving unexpectedly.
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not file security bugs here.** Email security@chipid.vn instead.
+  - type: input
+    id: version
+    attributes:
+      label: SDK / API version
+      placeholder: '@chipid/node@0.4.2'
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Code, curl, or steps. The smaller the better.
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations: { required: true }
+  - type: input
+    id: request_id
+    attributes:
+      label: Request ID (if applicable)
+      description: 'From the `request_id` field of the error response.'

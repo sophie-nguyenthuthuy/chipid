@@ -1,0 +1,20 @@
+{
+  "name": "chipid-example-express",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node --import tsx src/server.ts"
+  },
+  "dependencies": {
+    "@chipid/node": "workspace:*",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@chipid/node",
+  "version": "0.1.0",
+  "description": "ChipID Node.js SDK — eKYC for Vietnamese CCCD chip cards",
+  "license": "Apache-2.0",
+  "keywords": ["chipid", "ekyc", "cccd", "nfc", "vietnam", "identity"],
+  "homepage": "https://chipid.vn",
+  "repository": { "type": "git", "url": "https://github.com/chipid/chipid.git", "directory": "packages/sdk-node" },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@chipid/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@chipid/eslint-config": "workspace:*",
+    "@types/node": "^22.7.4",
+    "eslint": "^9.11.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1"
+  }
+}
