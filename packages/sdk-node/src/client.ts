@@ -73,7 +73,7 @@ export class ChipID {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), this.timeout);
       try {
-        const res = await this.fetcher(url, {
+        const init: RequestInit = {
           method,
           headers: {
             Authorization: `Bearer ${this.apiKey}`,
@@ -81,9 +81,10 @@ export class ChipID {
             'User-Agent': `chipid-node/${SDK_VERSION} (node)`,
             ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
           },
-          body: body === undefined ? undefined : JSON.stringify(body),
           signal: controller.signal,
-        });
+        };
+        if (body !== undefined) init.body = JSON.stringify(body);
+        const res = await this.fetcher(url, init);
 
         if (res.status >= 500 && attempt <= this.maxRetries) {
           await sleep(backoff(attempt));
@@ -93,14 +94,15 @@ export class ChipID {
         const parsed = text ? (JSON.parse(text) as unknown) : null;
         if (!res.ok) {
           const errBody = (parsed as { error?: ChipIDErrorBodyShape })?.error;
-          throw new ChipIDError(res.status, {
+          const errPayload: ChipIDErrorBodyShape & { type: string; code: string; message: string } = {
             type: errBody?.type ?? 'api_error',
             code: errBody?.code ?? 'api_error',
             message: errBody?.message ?? `Request failed with status ${res.status}`,
-            param: errBody?.param,
-            doc_url: errBody?.doc_url,
-            request_id: errBody?.request_id,
-          });
+          };
+          if (errBody?.param !== undefined) errPayload.param = errBody.param;
+          if (errBody?.doc_url !== undefined) errPayload.doc_url = errBody.doc_url;
+          if (errBody?.request_id !== undefined) errPayload.request_id = errBody.request_id;
+          throw new ChipIDError(res.status, errPayload);
         }
         return parsed as T;
       } catch (err) {

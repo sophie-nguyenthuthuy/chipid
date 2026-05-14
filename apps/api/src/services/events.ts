@@ -1,9 +1,9 @@
 import { Queue } from 'bullmq';
-import IORedis from 'ioredis';
+import { Redis } from 'ioredis';
 import { prisma } from '../db/client.js';
 import { config } from '../config.js';
 
-const connection = new IORedis(config.REDIS_URL, { maxRetriesPerRequest: null });
+const connection = new Redis(config.REDIS_URL, { maxRetriesPerRequest: null });
 
 export const webhookQueue = new Queue('webhook-delivery', { connection });
 
@@ -32,7 +32,7 @@ export async function enqueueEvent(args: {
     const event = await tx.event.create({
       data: {
         accountId: args.accountId,
-        verificationId: args.verificationId,
+        ...(args.verificationId ? { verificationId: args.verificationId } : {}),
         type: args.type,
         data: args.data as object,
       },

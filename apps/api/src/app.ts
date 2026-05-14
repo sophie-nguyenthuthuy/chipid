@@ -5,7 +5,7 @@ import helmet from '@fastify/helmet';
 import sensible from '@fastify/sensible';
 import rateLimit from '@fastify/rate-limit';
 import underPressure from '@fastify/under-pressure';
-import IORedis from 'ioredis';
+import { Redis } from 'ioredis';
 
 import { config } from './config.js';
 import { logger } from './logger.js';
@@ -18,7 +18,7 @@ import { webhookRoutes } from './routes/webhooks.js';
 
 export async function buildApp() {
   const app = Fastify({
-    logger,
+    loggerInstance: logger,
     genReqId: (req) => (req.headers['x-request-id'] as string | undefined) ?? `req_${randomUUID()}`,
     requestIdHeader: 'x-request-id',
     trustProxy: true,
@@ -35,7 +35,7 @@ export async function buildApp() {
     global: true,
     max: 100,
     timeWindow: '1 minute',
-    redis: new IORedis(config.REDIS_URL),
+    redis: new Redis(config.REDIS_URL),
     keyGenerator: (req) => req.auth?.accountId ?? req.ip,
     addHeadersOnExceeding: { 'x-ratelimit-limit': true, 'x-ratelimit-remaining': true },
     addHeaders: {

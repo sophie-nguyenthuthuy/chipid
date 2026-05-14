@@ -6,7 +6,12 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "verbatimModuleSyntax": false,
-    "types": ["node"]
+    "types": ["node"],
+    // Relaxed for the service: Prisma + Fastify + Pino's structural types
+    // collide with exactOptionalPropertyTypes in ways that add noise without
+    // catching real bugs. Library packages (sdk-node, nfc-parser, types)
+    // keep the strict setting where the public surface matters.
+    "exactOptionalPropertyTypes": false
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "test"]

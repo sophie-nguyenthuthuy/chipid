@@ -1,9 +1,30 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyError } from 'fastify';
 import { ZodError } from 'zod';
 import { ApiError } from '../lib/errors.js';
 
-export function registerErrorHandler(app: FastifyInstance): void {
-  app.setErrorHandler((err, req, reply) => {
+/**
+ * Shape we need to register error / 404 handlers. We don't bind to a precise
+ * Fastify generic — the instance's generic varies with each plugin or option,
+ * and chasing it does not catch real bugs.
+ */
+interface ErrorHandlerHost {
+  setErrorHandler(handler: (err: FastifyError, req: HandlerReq, reply: HandlerReply) => void): unknown;
+  setNotFoundHandler(handler: (req: HandlerReq, reply: HandlerReply) => void): unknown;
+}
+
+interface HandlerReq {
+  id: string;
+  method: string;
+  url: string;
+  log: { error: (...args: unknown[]) => void };
+}
+
+interface HandlerReply {
+  status(code: number): { send(payload: unknown): unknown };
+}
+
+export function registerErrorHandler(app: ErrorHandlerHost): void {
+  app.setErrorHandler((err: FastifyError, req, reply) => {
     const requestId = req.id;
 
     if (err instanceof ApiError) {
@@ -13,10 +34,11 @@ export function registerErrorHandler(app: FastifyInstance): void {
 
     if (err instanceof ZodError) {
       const first = err.issues[0];
+      const param = first?.path.join('.') || undefined;
       const apiErr = new ApiError(
         'parameter_invalid',
-        first ? `${first.message} (at ${first.path.join('.') || 'body'})` : 'Invalid request.',
-        first ? { param: first.path.join('.') || undefined } : {},
+        first ? `${first.message} (at ${param ?? 'body'})` : 'Invalid request.',
+        param ? { param } : {},
       );
       reply.status(apiErr.statusCode).send(apiErr.toJSON(requestId));
       return;

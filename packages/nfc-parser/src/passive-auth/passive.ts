@@ -1,15 +1,17 @@
 import { Certificate, CertificateChainValidationEngine, CryptoEngine, setEngine } from 'pkijs';
-import { Crypto } from 'node:crypto';
 import type { Sod } from '../lds/sod.js';
 
-// pkijs needs a WebCrypto-style engine. Node 20's globalThis.crypto works.
+// pkijs needs a WebCrypto-style engine. Node 20+ exposes one on globalThis.
+// pkijs's CryptoEngine typings predate Node's structural Crypto export, so we
+// route through `unknown` to satisfy the constructor.
+const webcrypto = globalThis.crypto as unknown as Record<string, unknown>;
 setEngine(
   'nodeEngine',
   new CryptoEngine({
     name: 'nodeEngine',
-    crypto: globalThis.crypto as unknown as Crypto,
-    subtle: globalThis.crypto.subtle,
-  }),
+    crypto: webcrypto,
+    subtle: webcrypto.subtle,
+  } as unknown as ConstructorParameters<typeof CryptoEngine>[0]),
 );
 
 /**

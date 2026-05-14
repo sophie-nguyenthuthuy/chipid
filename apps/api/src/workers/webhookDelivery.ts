@@ -1,11 +1,11 @@
 import { Worker } from 'bullmq';
-import IORedis from 'ioredis';
+import { Redis } from 'ioredis';
 import { prisma } from '../db/client.js';
 import { signWebhook } from '../lib/crypto.js';
 import { config } from '../config.js';
 import { logger } from '../logger.js';
 
-const connection = new IORedis(config.REDIS_URL, { maxRetriesPerRequest: null });
+const connection = new Redis(config.REDIS_URL, { maxRetriesPerRequest: null });
 
 // Exponential backoff with full jitter. Caps at ~24h to match Stripe.
 const BACKOFF_MS = [

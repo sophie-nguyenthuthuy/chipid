@@ -26,7 +26,7 @@ export async function createVerification(
       type: args.body.type,
       clientSecretHash: lookupHash(clientSecret, 'client_secret'),
       clientSecretExpiresAt: new Date(Date.now() + CLIENT_SECRET_TTL_MS),
-      returnUrl: args.body.return_url,
+      ...(args.body.return_url !== undefined ? { returnUrl: args.body.return_url } : {}),
       metadata: args.body.metadata,
     },
   });
@@ -107,9 +107,9 @@ export async function submitVerification(
       dataGroups: Object.fromEntries(
         Object.entries(body.data_groups).map(([k, v]) => [Number(k), Buffer.from(v, 'base64')]),
       ),
-      activeAuthResponse: body.active_auth_response
-        ? Buffer.from(body.active_auth_response, 'base64')
-        : undefined,
+      ...(body.active_auth_response
+        ? { activeAuthResponse: Buffer.from(body.active_auth_response, 'base64') }
+        : {}),
     });
 
     if (!result.ok) {

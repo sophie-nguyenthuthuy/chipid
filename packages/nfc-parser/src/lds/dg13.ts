@@ -48,7 +48,7 @@ export function parseDg13(buf: Buffer): Dg13 {
   for (const tlv of iterTlvs(outer.value)) {
     const decoded = tlv.value.toString('utf8');
     const key = TAGS[tlv.tag];
-    if (key) (out as Record<string, string>)[key] = decoded;
+    if (key) (out as unknown as Record<string, string>)[key] = decoded;
     else out.extras[`0x${tlv.tag.toString(16)}`] = decoded;
   }
   return out;
