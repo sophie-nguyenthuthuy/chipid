@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
         with: { version: 9.12.0 }
       - uses: actions/setup-node@v4
@@ -72,7 +72,7 @@ jobs:
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
         with: { version: 9.12.0 }
       - uses: actions/setup-node@v4
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v3
       - name: Build api image
         uses: docker/build-push-action@v6
@@ -111,7 +111,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
         with: { version: 9.12.0 }
       - uses: actions/setup-node@v4
