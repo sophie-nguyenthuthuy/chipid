@@ -42,7 +42,7 @@
     "ioredis": "^5.4.1",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",
-    "stripe": "^17.2.1",
+    "stripe": "^22.2.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
