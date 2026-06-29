@@ -27,9 +27,9 @@
   },
   "devDependencies": {
     "@chipid/eslint-config": "workspace:*",
-    "@types/node": "^22.7.4",
-    "eslint": "^9.11.1",
-    "typescript": "^5.6.2",
-    "vitest": "^2.1.1"
+    "@types/node": "^26.0.1",
+    "eslint": "^10.6.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }
