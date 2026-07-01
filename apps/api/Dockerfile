@@ -1,4 +1,4 @@
-FROM node:20.11.0-alpine AS base
+FROM node:26.4.0-alpine AS base
 RUN apk add --no-cache libc6-compat openssl
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -22,7 +22,7 @@ RUN pnpm --filter @chipid/api exec prisma generate
 RUN pnpm --filter @chipid/api build
 RUN pnpm --filter @chipid/api deploy --prod /prod/api
 
-FROM node:20.11.0-alpine AS runner
+FROM node:26.4.0-alpine AS runner
 RUN apk add --no-cache tini openssl ca-certificates && \
     addgroup -S -g 1001 app && adduser -S -u 1001 -G app app
 WORKDIR /app
