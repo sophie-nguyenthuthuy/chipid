@@ -47,11 +47,11 @@
   },
   "devDependencies": {
     "@chipid/eslint-config": "workspace:*",
-    "@types/node": "^22.7.4",
-    "eslint": "^9.11.1",
-    "prisma": "^5.20.0",
-    "tsx": "^4.19.1",
-    "typescript": "^5.6.2",
-    "vitest": "^2.1.1"
+    "@types/node": "^26.1.1",
+    "eslint": "^10.7.0",
+    "prisma": "^7.9.0",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }
